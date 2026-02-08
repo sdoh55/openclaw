@@ -13,6 +13,7 @@ export type HookMappingConfig = {
   match?: HookMappingMatch;
   action?: "wake" | "agent";
   wakeMode?: "now" | "next-heartbeat";
+  agentId?: string;
   name?: string;
   sessionKey?: string;
   messageTemplate?: string;

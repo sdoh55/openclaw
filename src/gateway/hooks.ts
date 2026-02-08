@@ -137,6 +137,7 @@ export function normalizeWakePayload(
 
 export type HookAgentPayload = {
   message: string;
+  agentId?: string;
   name: string;
   wakeMode: "now" | "next-heartbeat";
   sessionKey: string;
@@ -186,6 +187,9 @@ export function normalizeAgentPayload(
   if (!message) {
     return { ok: false, error: "message required" };
   }
+  const agentIdRaw = payload.agentId;
+  const agentId =
+    typeof agentIdRaw === "string" && agentIdRaw.trim() ? agentIdRaw.trim() : undefined;
   const nameRaw = payload.name;
   const name = typeof nameRaw === "string" && nameRaw.trim() ? nameRaw.trim() : "Hook";
   const wakeMode = payload.wakeMode === "next-heartbeat" ? "next-heartbeat" : "now";
@@ -219,6 +223,7 @@ export function normalizeAgentPayload(
     ok: true,
     value: {
       message,
+      agentId,
       name,
       wakeMode,
       sessionKey,

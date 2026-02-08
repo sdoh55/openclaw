@@ -11,6 +11,7 @@ export const HookMappingSchema = z
       .optional(),
     action: z.union([z.literal("wake"), z.literal("agent")]).optional(),
     wakeMode: z.union([z.literal("now"), z.literal("next-heartbeat")]).optional(),
+    agentId: z.string().optional(),
     name: z.string().optional(),
     sessionKey: z.string().optional(),
     messageTemplate: z.string().optional(),

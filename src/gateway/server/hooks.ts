@@ -31,6 +31,7 @@ export function createGatewayHooksRequestHandler(params: {
 
   const dispatchAgentHook = (value: {
     message: string;
+    agentId?: string;
     name: string;
     wakeMode: "now" | "next-heartbeat";
     sessionKey: string;
@@ -79,6 +80,7 @@ export function createGatewayHooksRequestHandler(params: {
           job,
           message: value.message,
           sessionKey,
+          agentId: value.agentId,
           lane: "cron",
         });
         const summary = result.summary?.trim() || result.error?.trim() || result.status;

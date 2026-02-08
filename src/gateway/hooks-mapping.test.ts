@@ -152,6 +152,151 @@ describe("hooks mapping", () => {
     }
   });
 
+  it("passes agentId from mapping config", async () => {
+    const mappings = resolveHookMappings({
+      mappings: [
+        {
+          id: "sarah-hook",
+          match: { path: "email" },
+          action: "agent",
+          agentId: "sarah",
+          messageTemplate: "New email: {{subject}}",
+        },
+      ],
+    });
+    expect(mappings[0]?.agentId).toBe("sarah");
+    const result = await applyHookMappings(mappings, {
+      payload: { subject: "Hello" },
+      headers: {},
+      url: new URL("http://127.0.0.1:18789/hooks/email"),
+      path: "email",
+    });
+    expect(result?.ok).toBe(true);
+    if (result?.ok && result.action?.kind === "agent") {
+      expect(result.action.agentId).toBe("sarah");
+    }
+  });
+
+  it("passes agentId from transform override", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-agent-"));
+    const modPath = path.join(dir, "transform.mjs");
+    fs.writeFileSync(
+      modPath,
+      `export default ({ payload }) => ({ message: "routed", agentId: payload.targetAgent });`,
+    );
+
+    const mappings = resolveHookMappings({
+      transformsDir: dir,
+      mappings: [
+        {
+          match: { path: "route" },
+          action: "agent",
+          messageTemplate: "fallback",
+          transform: { module: "transform.mjs" },
+        },
+      ],
+    });
+
+    const result = await applyHookMappings(mappings, {
+      payload: { targetAgent: "bill" },
+      headers: {},
+      url: new URL("http://127.0.0.1:18789/hooks/route"),
+      path: "route",
+    });
+
+    expect(result?.ok).toBe(true);
+    if (result?.ok && result.action?.kind === "agent") {
+      expect(result.action.agentId).toBe("bill");
+      expect(result.action.message).toBe("routed");
+    }
+  });
+
+  it("transform agentId overrides mapping agentId", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-override-"));
+    const modPath = path.join(dir, "transform.mjs");
+    fs.writeFileSync(modPath, `export default () => ({ message: "dynamic", agentId: "ops" });`);
+
+    const mappings = resolveHookMappings({
+      transformsDir: dir,
+      mappings: [
+        {
+          match: { path: "route" },
+          action: "agent",
+          agentId: "sarah",
+          messageTemplate: "fallback",
+          transform: { module: "transform.mjs" },
+        },
+      ],
+    });
+
+    const result = await applyHookMappings(mappings, {
+      payload: {},
+      headers: {},
+      url: new URL("http://127.0.0.1:18789/hooks/route"),
+      path: "route",
+    });
+
+    expect(result?.ok).toBe(true);
+    if (result?.ok && result.action?.kind === "agent") {
+      expect(result.action.agentId).toBe("ops");
+    }
+  });
+
+  it("supports agentId with template rendering", async () => {
+    const mappings = resolveHookMappings({
+      mappings: [
+        {
+          id: "dynamic-agent",
+          match: { path: "email" },
+          action: "agent",
+          agentId: "{{payload.inbox}}",
+          messageTemplate: "New email",
+        },
+      ],
+    });
+    const result = await applyHookMappings(mappings, {
+      payload: { inbox: "tom" },
+      headers: {},
+      url: new URL("http://127.0.0.1:18789/hooks/email"),
+      path: "email",
+    });
+    expect(result?.ok).toBe(true);
+    if (result?.ok && result.action?.kind === "agent") {
+      expect(result.action.agentId).toBe("tom");
+    }
+  });
+
+  it("transform can clear mapping-level agentId with null", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-clear-"));
+    const modPath = path.join(dir, "transform.mjs");
+    fs.writeFileSync(modPath, `export default () => ({ message: "cleared", agentId: null });`);
+
+    const mappings = resolveHookMappings({
+      transformsDir: dir,
+      mappings: [
+        {
+          match: { path: "route" },
+          action: "agent",
+          agentId: "sarah",
+          messageTemplate: "fallback",
+          transform: { module: "transform.mjs" },
+        },
+      ],
+    });
+
+    const result = await applyHookMappings(mappings, {
+      payload: {},
+      headers: {},
+      url: new URL("http://127.0.0.1:18789/hooks/route"),
+      path: "route",
+    });
+
+    expect(result?.ok).toBe(true);
+    if (result?.ok && result.action?.kind === "agent") {
+      expect(result.action.agentId).toBeUndefined();
+    }
+  });
+
   it("rejects missing message", async () => {
     const mappings = resolveHookMappings({
       mappings: [{ match: { path: "noop" }, action: "agent" }],
