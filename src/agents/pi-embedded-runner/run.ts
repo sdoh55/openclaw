@@ -396,6 +396,19 @@ export async function runEmbeddedPiAgent(
             `[pi-run] runEmbeddedAttempt returned: promptError=${!!promptError}, timedOut=${timedOut}, aborted=${aborted}`,
           );
 
+          // Bifrost returns HTTP 200 with error JSON in body - check for embedded errors
+          if (lastAssistant?.stopReason === "error" && lastAssistant?.errorMessage) {
+            log.warn(
+              `[pi-run] Converting lastAssistant.errorMessage to promptError: ${lastAssistant.errorMessage.slice(0, 300)}`,
+            );
+            const err = new Error(lastAssistant.errorMessage);
+            (err as { status_code?: number }).status_code = 408;
+            (err as { error?: { message?: string } }).error = {
+              message: lastAssistant.errorMessage,
+            };
+            throw err;
+          }
+
           if (promptError && !aborted) {
             const errorText = describeUnknownError(promptError);
             if (isContextOverflowError(errorText)) {
