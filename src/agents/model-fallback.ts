@@ -275,12 +275,26 @@ export async function runWithModelFallback<T>(params: {
       getLogger().warn(
         `[fb-trace] params.run succeeded for ${candidate.provider}/${candidate.model}`,
       );
-      return {
+      const returnVal = {
         result,
         provider: candidate.provider,
         model: candidate.model,
         attempts,
       };
+      const hasPayloads = Boolean(
+        returnVal.result &&
+        typeof returnVal.result === "object" &&
+        "payloads" in returnVal.result &&
+        (returnVal.result as { payloads?: unknown }).payloads,
+      );
+      const payloadsLen =
+        returnVal.result && typeof returnVal.result === "object" && "payloads" in returnVal.result
+          ? ((returnVal.result as { payloads?: Array<unknown> }).payloads?.length ?? 0)
+          : 0;
+      getLogger().warn(
+        `[fb-return] About to return success: provider=${returnVal.provider}, model=${returnVal.model}, hasPayloads=${hasPayloads}, payloadsLen=${payloadsLen}`,
+      );
+      return returnVal;
     } catch (err) {
       getLogger().error(`[fb-catch] GOT ERROR: ${err}`);
       getLogger().error(`[fb-catch] Error type: ${Object.prototype.toString.call(err)}`);

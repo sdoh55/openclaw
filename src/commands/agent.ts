@@ -386,6 +386,10 @@ export async function agentCommand(
         opts.replyChannel ?? opts.channel,
       );
       const spawnedBy = opts.spawnedBy ?? sessionEntry?.spawnedBy;
+      console.warn(
+        `[agent-before-fallback] Starting runWithModelFallback: provider=${provider}, model=${model}`,
+      );
+      console.warn(`[agent-before-fallback] Awaiting runWithModelFallback...`);
       const fallbackResult = await runWithModelFallback({
         cfg,
         provider,
@@ -468,6 +472,7 @@ export async function agentCommand(
           });
         },
       });
+      console.warn(`[agent-after-fallback] runWithModelFallback RESOLVED, assigning result...`);
       result = fallbackResult.result;
       fallbackProvider = fallbackResult.provider;
       fallbackModel = fallbackResult.model;
