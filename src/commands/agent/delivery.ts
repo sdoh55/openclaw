@@ -78,6 +78,9 @@ export async function deliverAgentCommandResult(params: {
     wantsDelivery: deliver,
   });
   const deliveryChannel = deliveryPlan.resolvedChannel;
+  console.warn(
+    `[delivery-enter] deliver=${deliver}, payloadsLen=${payloads?.length ?? 0}, channel=${deliveryPlan.resolvedChannel}, target=${deliveryPlan.resolvedTo ?? "N/A"}`,
+  );
   // Channel docking: delivery channels are resolved via plugin registry.
   const deliveryPlugin = !isInternalMessageChannel(deliveryChannel)
     ? getChannelPlugin(normalizeChannelId(deliveryChannel) ?? deliveryChannel)
@@ -152,11 +155,13 @@ export async function deliverAgentCommandResult(params: {
   }
 
   if (!payloads || payloads.length === 0) {
+    console.warn(`[delivery-empty] No reply from agent - returning empty payloads`);
     runtime.log("No reply from agent.");
     return { payloads: [], meta: result.meta };
   }
 
   const deliveryPayloads = normalizeOutboundPayloads(payloads);
+  console.warn(`[delivery-proceed] Proceeding with ${deliveryPayloads.length} delivery payloads`);
   const logPayload = (payload: NormalizedOutboundPayload) => {
     if (opts.json) {
       return;
@@ -194,5 +199,6 @@ export async function deliverAgentCommandResult(params: {
     }
   }
 
+  console.warn(`[delivery-exit] Returning: payloadCount=${normalizedPayloads.length}`);
   return { payloads: normalizedPayloads, meta: result.meta };
 }

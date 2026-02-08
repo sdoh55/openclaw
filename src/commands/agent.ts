@@ -471,6 +471,14 @@ export async function agentCommand(
       result = fallbackResult.result;
       fallbackProvider = fallbackResult.provider;
       fallbackModel = fallbackResult.model;
+      console.warn(
+        `[agent-post-fallback] Received result: payloadsExist=${!!result.payloads}, payloadsLen=${result.payloads?.length ?? 0}, aborted=${result.meta.aborted}, provider=${fallbackProvider}, model=${fallbackModel}`,
+      );
+      if (result.payloads && result.payloads.length > 0) {
+        console.warn(
+          `[agent-post-fallback] First payload sample: ${result.payloads[0].text?.slice(0, 100) ?? "N/A"}`,
+        );
+      }
       if (!lifecycleEnded) {
         emitAgentEvent({
           runId,

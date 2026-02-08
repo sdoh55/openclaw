@@ -697,6 +697,15 @@ export async function runEmbeddedPiAgent(
             toolResultFormat: resolvedToolResultFormat,
             inlineToolResultsAllowed: false,
           });
+          log.warn(
+            `[pi-payloads] buildEmbeddedRunPayloads returned: count=${payloads.length}, assistantTextsLen=${attempt.assistantTexts?.length ?? 0}, lastAssistantStopReason=${attempt.lastAssistant?.stopReason ?? "N/A"}, lastAssistantContentLen=${attempt.lastAssistant?.content?.length ?? 0}`,
+          );
+          if (payloads.length > 0) {
+            const firstText = payloads[0].text?.slice(0, 100) ?? "N/A";
+            log.warn(
+              `[pi-payloads] First payload: text=${firstText}, isError=${payloads[0].isError}`,
+            );
+          }
 
           log.debug(
             `embedded run done: runId=${params.runId} sessionId=${params.sessionId} durationMs=${Date.now() - started} aborted=${aborted}`,
