@@ -1,3 +1,4 @@
+import { getLogger } from "../logging.ts";
 import { classifyFailoverReason, type FailoverReason } from "./pi-embedded-helpers.js";
 
 const TIMEOUT_HINT_RE = /timeout|timed out|deadline exceeded|context deadline exceeded/i;
@@ -151,6 +152,7 @@ export function isTimeoutError(err: unknown): boolean {
 }
 
 export function resolveFailoverReasonFromError(err: unknown): FailoverReason | null {
+  getLogger().info(`resolving failover from error: ${err}`);
   if (isFailoverError(err)) {
     return err.reason;
   }

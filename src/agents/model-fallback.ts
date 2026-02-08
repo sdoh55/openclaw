@@ -1,5 +1,6 @@
 import type { OpenClawConfig } from "../config/config.js";
 import type { FailoverReason } from "./pi-embedded-helpers.js";
+import { getLogger } from "../logging.ts";
 import {
   ensureAuthProfileStore,
   isProfileInCooldown,
@@ -225,6 +226,7 @@ export async function runWithModelFallback<T>(params: {
   model: string;
   attempts: FallbackAttempt[];
 }> {
+  getLogger().info("runWithModelFallback");
   const candidates = resolveFallbackCandidates({
     cfg: params.cfg,
     provider: params.provider,
@@ -239,6 +241,9 @@ export async function runWithModelFallback<T>(params: {
 
   for (let i = 0; i < candidates.length; i += 1) {
     const candidate = candidates[i];
+    getLogger().warn(
+      `[fb-trace] Attempting candidate ${i + 1}/${candidates.length}: ${candidate.provider}/${candidate.model}`,
+    );
     if (authStore) {
       const profileIds = resolveAuthProfileOrder({
         cfg: params.cfg,
@@ -248,7 +253,7 @@ export async function runWithModelFallback<T>(params: {
       const isAnyProfileAvailable = profileIds.some((id) => !isProfileInCooldown(authStore, id));
 
       if (profileIds.length > 0 && !isAnyProfileAvailable) {
-        // All profiles for this provider are in cooldown; skip without attempting
+        getLogger().warn(`[fb-trace] All profiles in cooldown for ${candidate.provider}, skipping`);
         attempts.push({
           provider: candidate.provider,
           model: candidate.model,
@@ -257,9 +262,16 @@ export async function runWithModelFallback<T>(params: {
         });
         continue;
       }
+      getLogger().warn(
+        `[fb-trace] Available profiles for ${candidate.provider}: ${JSON.stringify(profileIds)}`,
+      );
     }
     try {
+      getLogger().warn(`[fb-trace] Calling params.run(${candidate.provider}, ${candidate.model})`);
       const result = await params.run(candidate.provider, candidate.model);
+      getLogger().warn(
+        `[fb-trace] params.run succeeded for ${candidate.provider}/${candidate.model}`,
+      );
       return {
         result,
         provider: candidate.provider,
@@ -267,7 +279,13 @@ export async function runWithModelFallback<T>(params: {
         attempts,
       };
     } catch (err) {
+      getLogger().error(`[fb-catch] GOT ERROR: ${err}`);
+      getLogger().error(`[fb-catch] Error type: ${Object.prototype.toString.call(err)}`);
+      if (err && typeof err === "object") {
+        getLogger().error(`[fb-catch] Error keys: ${Object.keys(err as object).join(", ")}`);
+      }
       if (shouldRethrowAbort(err)) {
+        getLogger().warn(`[fb-catch] Rethrowing abort error`);
         throw err;
       }
       const normalized =
@@ -275,12 +293,19 @@ export async function runWithModelFallback<T>(params: {
           provider: candidate.provider,
           model: candidate.model,
         }) ?? err;
+      getLogger().warn(
+        `[fb-catch] coerceToFailoverError result: isFailoverError=${isFailoverError(normalized)}, reason=${normalized && typeof normalized === "object" && "reason" in normalized ? (normalized as { reason?: string }).reason : "N/A"}`,
+      );
       if (!isFailoverError(normalized)) {
+        getLogger().warn(`[fb-catch] NOT a FailoverError, rethrowing raw error`);
         throw err;
       }
 
       lastError = normalized;
       const described = describeFailoverError(normalized);
+      getLogger().warn(
+        `[fb-catch] Normalized error: message="${described.message}", reason=${described.reason}, status=${described.status}`,
+      );
       attempts.push({
         provider: candidate.provider,
         model: candidate.model,
