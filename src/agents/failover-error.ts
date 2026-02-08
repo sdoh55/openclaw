@@ -60,8 +60,9 @@ function getStatusCode(err: unknown): number | undefined {
     return undefined;
   }
   const candidate =
-    (err as { status?: unknown; statusCode?: unknown }).status ??
-    (err as { statusCode?: unknown }).statusCode;
+    (err as { status?: unknown }).status ??
+    (err as { statusCode?: unknown }).statusCode ??
+    (err as { status_code?: unknown }).status_code;
   if (typeof candidate === "number") {
     return candidate;
   }
@@ -104,9 +105,16 @@ function getErrorMessage(err: unknown): string {
     return err.description ?? "";
   }
   if (err && typeof err === "object") {
-    const message = (err as { message?: unknown }).message;
-    if (typeof message === "string") {
-      return message;
+    const directMessage = (err as { message?: unknown }).message;
+    if (typeof directMessage === "string") {
+      return directMessage;
+    }
+    const nestedError = (err as { error?: unknown }).error;
+    if (nestedError && typeof nestedError === "object") {
+      const nestedMessage = (nestedError as { message?: unknown }).message;
+      if (typeof nestedMessage === "string") {
+        return nestedMessage;
+      }
     }
   }
   return "";
