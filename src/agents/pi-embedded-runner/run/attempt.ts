@@ -608,10 +608,12 @@ export async function runEmbeddedAttempt(
           signal.addEventListener("abort", onAbort, { once: true });
           promise.then(
             (value) => {
+              log.info("got value", { value });
               signal.removeEventListener("abort", onAbort);
               resolve(value);
             },
             (err) => {
+              log.error("got error", { err });
               signal.removeEventListener("abort", onAbort);
               reject(err);
             },
@@ -823,6 +825,7 @@ export async function runEmbeddedAttempt(
           }
           log.warn(`[attempt] activeSession.prompt returned successfully`);
         } catch (err) {
+          log.error("caught error", { err });
           promptError = err;
         } finally {
           log.debug(
@@ -882,6 +885,7 @@ export async function runEmbeddedAttempt(
         params.abortSignal?.removeEventListener?.("abort", onAbort);
       }
 
+      log.debug("messagesSnapshot", { messagesSnapshot });
       const lastAssistant = messagesSnapshot
         .slice()
         .toReversed()
