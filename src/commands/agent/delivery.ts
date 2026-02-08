@@ -182,20 +182,29 @@ export async function deliverAgentCommandResult(params: {
     }
   }
   if (deliver && deliveryChannel && !isInternalMessageChannel(deliveryChannel)) {
+    console.warn(
+      `[delivery-outbound] Preparing outbound delivery: channel=${deliveryChannel}, target=${deliveryTarget ?? "N/A"}`,
+    );
     if (deliveryTarget) {
-      await deliverOutboundPayloads({
-        cfg,
-        channel: deliveryChannel,
-        to: deliveryTarget,
-        accountId: resolvedAccountId,
-        payloads: deliveryPayloads,
-        replyToId: resolvedReplyToId ?? null,
-        threadId: resolvedThreadTarget ?? null,
-        bestEffort: bestEffortDeliver,
-        onError: (err) => logDeliveryError(err),
-        onPayload: logPayload,
-        deps: createOutboundSendDeps(deps),
-      });
+      try {
+        await deliverOutboundPayloads({
+          cfg,
+          channel: deliveryChannel,
+          to: deliveryTarget,
+          accountId: resolvedAccountId,
+          payloads: deliveryPayloads,
+          replyToId: resolvedReplyToId ?? null,
+          threadId: resolvedThreadTarget ?? null,
+          bestEffort: bestEffortDeliver,
+          onError: (err) => logDeliveryError(err),
+          onPayload: logPayload,
+          deps: createOutboundSendDeps(deps),
+        });
+        console.warn(`[delivery-outbound-success] Outbound delivery completed`);
+      } catch (outboundErr) {
+        console.error(`[delivery-outbound-error] Outbound delivery threw: ${outboundErr}`);
+        throw outboundErr;
+      }
     }
   }
 

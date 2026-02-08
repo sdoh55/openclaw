@@ -460,13 +460,17 @@ export async function agentCommand(
             streamParams: opts.streamParams,
             agentDir,
             onAgentEvent: (evt) => {
-              // Track lifecycle end for fallback emission below.
-              if (
-                evt.stream === "lifecycle" &&
-                typeof evt.data?.phase === "string" &&
-                (evt.data.phase === "end" || evt.data.phase === "error")
-              ) {
-                lifecycleEnded = true;
+              try {
+                if (
+                  evt.stream === "lifecycle" &&
+                  typeof evt.data?.phase === "string" &&
+                  (evt.data.phase === "end" || evt.data.phase === "error")
+                ) {
+                  lifecycleEnded = true;
+                }
+              } catch (cbErr) {
+                console.error("[agent-onAgentEvent-catch] Callback threw:", cbErr);
+                throw cbErr;
               }
             },
           });

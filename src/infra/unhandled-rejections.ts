@@ -146,6 +146,30 @@ export function installUnhandledRejectionHandler(): void {
       return;
     }
 
+    console.error("[openclaw-unhandled-rejection] ========== START ========");
+    console.error("[openclaw-unhandled-rejection] Uncaught promise rejection detected!");
+    console.error("[openclaw-unhandled-rejection] Reason:", formatUncaughtError(reason));
+
+    const stackLines = reason instanceof Error ? (reason.stack?.split("\n") ?? []) : [];
+    if (stackLines.length > 0) {
+      console.error("[openclaw-unhandled-rejection] Stack trace:");
+      for (const line of stackLines.slice(0, 20)) {
+        console.error("  ", line.trim());
+      }
+    }
+
+    const callerStack = new Error("CALLER_STACK").stack?.split("\n") ?? [];
+    if (callerStack.length > 1) {
+      console.error("[openclaw-unhandler-rejection] Caller trace (first 15 frames):");
+      for (const line of callerStack.slice(1, 16)) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.includes("node:internal/process")) {
+          console.error("  ", trimmed.replace(/^at\s+/, ""));
+        }
+      }
+    }
+    console.error("[openclaw-unhandled-rejection] ========== END ========");
+
     // AbortError is typically an intentional cancellation (e.g., during shutdown)
     // Log it but don't crash - these are expected during graceful shutdown
     if (isAbortError(reason)) {
