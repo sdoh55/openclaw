@@ -73,6 +73,9 @@ function scrubAnthropicRefusalMagic(prompt: string): string {
 export async function runEmbeddedPiAgent(
   params: RunEmbeddedPiAgentParams,
 ): Promise<EmbeddedPiRunResult> {
+  log.warn(
+    `[pi-entry] runEmbeddedPiAgent called: provider=${params.provider}, model=${params.model}`,
+  );
   const sessionLane = resolveSessionLane(params.sessionKey?.trim() || params.sessionId);
   const globalLane = resolveGlobalLane(params.lane);
   const enqueueGlobal =
@@ -91,6 +94,7 @@ export async function runEmbeddedPiAgent(
 
   return enqueueSession(() =>
     enqueueGlobal(async () => {
+      log.warn(`[pi-queued] Inside enqueueGlobal callback`);
       const started = Date.now();
       const workspaceResolution = resolveRunWorkspaceDir({
         workspaceDir: params.workspaceDir,

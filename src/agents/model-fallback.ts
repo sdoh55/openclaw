@@ -268,7 +268,10 @@ export async function runWithModelFallback<T>(params: {
     }
     try {
       getLogger().warn(`[fb-trace] Calling params.run(${candidate.provider}, ${candidate.model})`);
-      const result = await params.run(candidate.provider, candidate.model);
+      const result = await params.run(candidate.provider, candidate.model).catch((e) => {
+        getLogger().error(`[fb-inner-catch] params.run threw synchronously: ${e}`);
+        throw e;
+      });
       getLogger().warn(
         `[fb-trace] params.run succeeded for ${candidate.provider}/${candidate.model}`,
       );
