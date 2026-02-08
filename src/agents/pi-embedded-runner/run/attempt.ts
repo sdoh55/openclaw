@@ -813,10 +813,15 @@ export async function runEmbeddedAttempt(
           // Only pass images option if there are actually images to pass
           // This avoids potential issues with models that don't expect the images parameter
           if (imageResult.images.length > 0) {
+            log.warn(
+              `[attempt] calling activeSession.prompt with ${imageResult.images.length} images`,
+            );
             await abortable(activeSession.prompt(effectivePrompt, { images: imageResult.images }));
           } else {
+            log.warn(`[attempt] calling activeSession.prompt (no images)`);
             await abortable(activeSession.prompt(effectivePrompt));
           }
+          log.warn(`[attempt] activeSession.prompt returned successfully`);
         } catch (err) {
           promptError = err;
         } finally {

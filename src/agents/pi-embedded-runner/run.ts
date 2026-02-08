@@ -385,8 +385,12 @@ export async function runEmbeddedPiAgent(
             ownerNumbers: params.ownerNumbers,
             enforceFinalTag: params.enforceFinalTag,
           });
+          log.warn(`[pi-run] runEmbeddedAttempt initiated, waiting for result...`);
 
           const { aborted, promptError, timedOut, sessionIdUsed, lastAssistant } = attempt;
+          log.warn(
+            `[pi-run] runEmbeddedAttempt returned: promptError=${!!promptError}, timedOut=${timedOut}, aborted=${aborted}`,
+          );
 
           if (promptError && !aborted) {
             const errorText = describeUnknownError(promptError);
